@@ -373,6 +373,26 @@
   .gitmap-label-text.forward { fill: var(--forward-strong); }
   .gitmap-label-text.sync { fill: var(--undo-strong); }
   .gitmap-zone-label { fill: var(--text-muted); font-family: var(--font); font-size: 12px; font-weight: 600; }
+
+  .gitmap-cmd { cursor: pointer; }
+  .gitmap-cmd .gitmap-hit { fill: transparent; pointer-events: all; }
+  .gitmap-cmd { transition: opacity 0.15s ease; }
+  .gitmap-cmd .gitmap-arrow,
+  .gitmap-cmd .gitmap-label-bg,
+  .gitmap-cmd .gitmap-arrowhead { transition: stroke-width 0.15s ease; }
+  @media (prefers-reduced-motion: reduce) {
+    .gitmap-cmd,
+    .gitmap-cmd .gitmap-arrow,
+    .gitmap-cmd .gitmap-label-bg,
+    .gitmap-cmd .gitmap-arrowhead { transition: none; }
+  }
+  .gitmap-cmd.gitmap-dim { opacity: 0.3; }
+  .gitmap-cmd.gitmap-active .gitmap-arrow { stroke-width: 5; }
+  .gitmap-cmd.gitmap-active .gitmap-arrow.thick { stroke-width: 8; }
+  .gitmap-cmd.gitmap-active .gitmap-label-bg,
+  .gitmap-cmd:hover .gitmap-label-bg { stroke: var(--border-strong); stroke-width: 1.5; }
+  .gitmap-cmd:focus-visible { outline: none; }
+  .gitmap-cmd:focus-visible .gitmap-label-bg { stroke: var(--focus-ring); stroke-width: 2; }
   .reset-btn:hover { color: var(--text); border-color: var(--text); }
 
   /* ---------- section 3: branch graph ---------- */
@@ -784,48 +804,72 @@
       <text class="gitmap-box-label" x="830" y="58" text-anchor="middle">(GitHub)</text>
 
       <!-- row 1: add, commit, push (forward, teal) -->
-      <line class="gitmap-arrow forward" x1="110" y1="110" x2="336" y2="110"></line>
-      <polygon class="gitmap-arrowhead forward" points="336,104 350,110 336,116"></polygon>
-      <rect class="gitmap-label-bg" x="195" y="99" width="70" height="20" rx="4"></rect>
-      <text class="gitmap-label-text forward" x="230" y="113" text-anchor="middle">git add</text>
+      <g class="gitmap-cmd" data-cmd="add" tabindex="0" role="button" aria-label="git add. Stages changes: moves files from the working directory to the staging area. Click to run it in the simulator above.">
+        <rect class="gitmap-hit" x="105" y="96" width="245" height="24"></rect>
+        <line class="gitmap-arrow forward" x1="110" y1="110" x2="336" y2="110"></line>
+        <polygon class="gitmap-arrowhead forward" points="336,104 350,110 336,116"></polygon>
+        <rect class="gitmap-label-bg" x="195" y="99" width="70" height="20" rx="4"></rect>
+        <text class="gitmap-label-text forward" x="230" y="113" text-anchor="middle">git add</text>
+      </g>
 
-      <line class="gitmap-arrow forward" x1="364" y1="110" x2="576" y2="110"></line>
-      <polygon class="gitmap-arrowhead forward" points="576,104 590,110 576,116"></polygon>
-      <rect class="gitmap-label-bg" x="424" y="99" width="92" height="20" rx="4"></rect>
-      <text class="gitmap-label-text forward" x="470" y="113" text-anchor="middle">git commit</text>
+      <g class="gitmap-cmd" data-cmd="commit" tabindex="0" role="button" aria-label="git commit. Commits staged changes: moves files into the local repository as a new snapshot. Click to run it in the simulator above.">
+        <rect class="gitmap-hit" x="350" y="96" width="240" height="24"></rect>
+        <line class="gitmap-arrow forward" x1="364" y1="110" x2="576" y2="110"></line>
+        <polygon class="gitmap-arrowhead forward" points="576,104 590,110 576,116"></polygon>
+        <rect class="gitmap-label-bg" x="424" y="99" width="92" height="20" rx="4"></rect>
+        <text class="gitmap-label-text forward" x="470" y="113" text-anchor="middle">git commit</text>
+      </g>
 
-      <line class="gitmap-arrow forward" x1="604" y1="110" x2="816" y2="110"></line>
-      <polygon class="gitmap-arrowhead forward" points="816,104 830,110 816,116"></polygon>
-      <rect class="gitmap-label-bg" x="671" y="99" width="78" height="20" rx="4"></rect>
-      <text class="gitmap-label-text forward" x="710" y="113" text-anchor="middle">git push</text>
+      <g class="gitmap-cmd" data-cmd="push" tabindex="0" role="button" aria-label="git push. Sends local commits up to the remote repository on GitHub. Click to run it in the simulator above.">
+        <rect class="gitmap-hit" x="590" y="96" width="245" height="24"></rect>
+        <line class="gitmap-arrow forward" x1="604" y1="110" x2="816" y2="110"></line>
+        <polygon class="gitmap-arrowhead forward" points="816,104 830,110 816,116"></polygon>
+        <rect class="gitmap-label-bg" x="671" y="99" width="78" height="20" rx="4"></rect>
+        <text class="gitmap-label-text forward" x="710" y="113" text-anchor="middle">git push</text>
+      </g>
 
       <!-- row 2: reset, fetch (sync, coral) -->
-      <line class="gitmap-arrow sync" x1="336" y1="150" x2="124" y2="150"></line>
-      <polygon class="gitmap-arrowhead sync" points="124,144 110,150 124,156"></polygon>
-      <rect class="gitmap-label-bg" x="188" y="139" width="84" height="20" rx="4"></rect>
-      <text class="gitmap-label-text sync" x="230" y="153" text-anchor="middle">git reset</text>
+      <g class="gitmap-cmd" data-cmd="reset" tabindex="0" role="button" aria-label="git reset. Unstages changes: moves files back from staging into the working directory. Click to run it in the simulator above.">
+        <rect class="gitmap-hit" x="105" y="136" width="245" height="24"></rect>
+        <line class="gitmap-arrow sync" x1="336" y1="150" x2="124" y2="150"></line>
+        <polygon class="gitmap-arrowhead sync" points="124,144 110,150 124,156"></polygon>
+        <rect class="gitmap-label-bg" x="188" y="139" width="84" height="20" rx="4"></rect>
+        <text class="gitmap-label-text sync" x="230" y="153" text-anchor="middle">git reset</text>
+      </g>
 
-      <line class="gitmap-arrow sync" x1="816" y1="150" x2="604" y2="150"></line>
-      <polygon class="gitmap-arrowhead sync" points="604,144 590,150 604,156"></polygon>
-      <rect class="gitmap-label-bg" x="668" y="139" width="84" height="20" rx="4"></rect>
-      <text class="gitmap-label-text sync" x="710" y="153" text-anchor="middle">git fetch</text>
+      <g class="gitmap-cmd" data-cmd="fetch" tabindex="0" role="button" aria-label="git fetch. Downloads history from the remote into the local repository without touching your files. Click to run it in the simulator above.">
+        <rect class="gitmap-hit" x="590" y="136" width="245" height="24"></rect>
+        <line class="gitmap-arrow sync" x1="816" y1="150" x2="604" y2="150"></line>
+        <polygon class="gitmap-arrowhead sync" points="604,144 590,150 604,156"></polygon>
+        <rect class="gitmap-label-bg" x="668" y="139" width="84" height="20" rx="4"></rect>
+        <text class="gitmap-label-text sync" x="710" y="153" text-anchor="middle">git fetch</text>
+      </g>
 
       <!-- row 3: pull (sync, coral, spans the whole width) -->
-      <line class="gitmap-arrow sync thick" x1="816" y1="195" x2="124" y2="195"></line>
-      <polygon class="gitmap-arrowhead sync thick" points="126,187 108,195 126,203"></polygon>
-      <rect class="gitmap-label-bg" x="432" y="184" width="76" height="21" rx="4"></rect>
-      <text class="gitmap-label-text sync" x="470" y="199" text-anchor="middle">git pull</text>
+      <g class="gitmap-cmd" data-cmd="pull" tabindex="0" role="button" aria-label="git pull. Downloads remote history and merges it straight into the working directory. Click to run it in the simulator above.">
+        <rect class="gitmap-hit" x="105" y="180" width="730" height="26"></rect>
+        <line class="gitmap-arrow sync thick" x1="816" y1="195" x2="124" y2="195"></line>
+        <polygon class="gitmap-arrowhead sync thick" points="126,187 108,195 126,203"></polygon>
+        <rect class="gitmap-label-bg" x="432" y="184" width="76" height="21" rx="4"></rect>
+        <text class="gitmap-label-text sync" x="470" y="199" text-anchor="middle">git pull</text>
+      </g>
 
       <!-- row 4: checkout, clone (sync, coral) -->
-      <line class="gitmap-arrow sync" x1="576" y1="240" x2="124" y2="240"></line>
-      <polygon class="gitmap-arrowhead sync" points="124,234 110,240 124,246"></polygon>
-      <rect class="gitmap-label-bg" x="298" y="229" width="104" height="20" rx="4"></rect>
-      <text class="gitmap-label-text sync" x="350" y="243" text-anchor="middle">git checkout</text>
+      <g class="gitmap-cmd" data-cmd="checkout" tabindex="0" role="button" aria-label="git checkout. Switches the working directory to match the local repository. Not tracked by the simulator above.">
+        <rect class="gitmap-hit" x="105" y="226" width="485" height="24"></rect>
+        <line class="gitmap-arrow sync" x1="576" y1="240" x2="124" y2="240"></line>
+        <polygon class="gitmap-arrowhead sync" points="124,234 110,240 124,246"></polygon>
+        <rect class="gitmap-label-bg" x="298" y="229" width="104" height="20" rx="4"></rect>
+        <text class="gitmap-label-text sync" x="350" y="243" text-anchor="middle">git checkout</text>
+      </g>
 
-      <line class="gitmap-arrow sync" x1="816" y1="240" x2="604" y2="240"></line>
-      <polygon class="gitmap-arrowhead sync" points="604,234 590,240 604,246"></polygon>
-      <rect class="gitmap-label-bg" x="669" y="229" width="82" height="20" rx="4"></rect>
-      <text class="gitmap-label-text sync" x="710" y="243" text-anchor="middle">git clone</text>
+      <g class="gitmap-cmd" data-cmd="clone" tabindex="0" role="button" aria-label="git clone. Copies an entire remote repository into a new local repository. Not tracked by the simulator above.">
+        <rect class="gitmap-hit" x="590" y="226" width="245" height="24"></rect>
+        <line class="gitmap-arrow sync" x1="816" y1="240" x2="604" y2="240"></line>
+        <polygon class="gitmap-arrowhead sync" points="604,234 590,240 604,246"></polygon>
+        <rect class="gitmap-label-bg" x="669" y="229" width="82" height="20" rx="4"></rect>
+        <text class="gitmap-label-text sync" x="710" y="243" text-anchor="middle">git clone</text>
+      </g>
 
       <text class="gitmap-zone-label" x="355" y="292" text-anchor="middle">Your machine</text>
       <text class="gitmap-zone-label" x="825" y="292" text-anchor="middle">GitHub</text>
@@ -836,8 +880,13 @@
       git reset moves staged files back to the working directory. git fetch downloads remote history into the local
       repository without touching your files. git pull downloads remote history and merges it straight into the
       working directory. git checkout switches the working directory to match the local repository. git clone copies
-      an entire remote repository into a new local repository.
+      an entire remote repository into a new local repository. Each arrow above is a button — hover or focus it to see
+      this description, or activate it to run it in the simulator higher up the page (where supported).
     </p>
+
+    <div class="sim-caption" id="gitmapCaption" aria-live="polite">
+      Hover, or tab to, any arrow to see what it does. Click one of the six commands shared with the simulator above to actually run it there.
+    </div>
 
     <div class="legend">
       <span class="legend-item"><span class="legend-swatch forward" aria-hidden="true"></span> moves work forward, toward GitHub</span>
@@ -928,7 +977,7 @@
 <footer>
   <p>Built to teach the mental model, not replace the docs. Hover, click, and break things &mdash; it resets.</p>
   <p class="version-tag">
-    <a href="https://github.com/junjing02/learn_git" target="_blank" rel="noopener noreferrer">v1.2.1</a>
+    <a href="https://github.com/junjing02/learn_git" target="_blank" rel="noopener noreferrer">v1.3.0</a>
   </p>
 </footer>
 
@@ -1068,6 +1117,70 @@
   // Also position immediately in case load already fired
   positionToken();
   updateButtonStates();
+
+  /* ============ "The full picture" command map: hover/focus to preview, click to run ============ */
+  var gitmapGroups = Array.prototype.slice.call(document.querySelectorAll('.gitmap-cmd'));
+  var gitmapCaption = document.getElementById('gitmapCaption');
+  var gitmapDefaultCaption = gitmapCaption ? gitmapCaption.innerHTML : '';
+
+  var GITMAP_EXTRA_INFO = {
+    checkout: 'Switches your working directory files to match what’s in the local repository — e.g. after changing branches.',
+    clone: 'Copies an entire remote repository, history and all, into a brand-new local repository on your machine.'
+  };
+
+  function gitmapDescriptionFor(cmd) {
+    return CMD_INFO[cmd] ? CMD_INFO[cmd].desc : (GITMAP_EXTRA_INFO[cmd] || '');
+  }
+
+  function gitmapSetActive(group) {
+    gitmapGroups.forEach(function (g) {
+      var isActive = g === group;
+      g.classList.toggle('gitmap-active', isActive);
+      g.classList.toggle('gitmap-dim', !isActive);
+    });
+  }
+
+  function gitmapClearActive() {
+    gitmapGroups.forEach(function (g) { g.classList.remove('gitmap-active', 'gitmap-dim'); });
+    if (gitmapCaption) gitmapCaption.innerHTML = gitmapDefaultCaption;
+  }
+
+  function gitmapPreview(group) {
+    var cmd = group.getAttribute('data-cmd');
+    gitmapSetActive(group);
+    if (gitmapCaption) gitmapCaption.innerHTML = '<strong>git ' + cmd + '</strong> &mdash; ' + gitmapDescriptionFor(cmd);
+  }
+
+  function gitmapRun(group) {
+    var cmd = group.getAttribute('data-cmd');
+    var info = CMD_INFO[cmd];
+    gitmapSetActive(group);
+    if (!gitmapCaption) return;
+    if (!info) {
+      gitmapCaption.innerHTML = '<strong>git ' + cmd + '</strong> &mdash; ' + gitmapDescriptionFor(cmd) + ' <em>(Not tracked by the one-file simulator above.)</em>';
+      return;
+    }
+    if (info.from !== currentArea) {
+      gitmapCaption.innerHTML = 'Can&rsquo;t run <strong>git ' + cmd + '</strong> from here &mdash; the file&rsquo;s not in the right place in the simulator above. Try it there once it is, or just hover to preview.';
+      return;
+    }
+    runCommand(cmd);
+    gitmapCaption.innerHTML = '<strong>git ' + cmd + '</strong> &mdash; ' + info.desc + ' <em>(Ran it in the simulator above too &mdash; scroll up to see.)</em>';
+  }
+
+  gitmapGroups.forEach(function (group) {
+    group.addEventListener('mouseenter', function () { gitmapPreview(group); });
+    group.addEventListener('focus', function () { gitmapPreview(group); });
+    group.addEventListener('mouseleave', gitmapClearActive);
+    group.addEventListener('blur', gitmapClearActive);
+    group.addEventListener('click', function () { gitmapRun(group); });
+    group.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter' || ev.key === ' ' || ev.key === 'Spacebar') {
+        ev.preventDefault();
+        gitmapRun(group);
+      }
+    });
+  });
 
   /* ============ Section 3: commit graph ============ */
   var svg = document.getElementById('commitGraph');
