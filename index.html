@@ -376,6 +376,46 @@
   .btn-feature { border-color: var(--feature-branch); color: var(--feature-branch); }
   .btn-merge { border-color: var(--border-strong); }
 
+  .cmd-input-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+  .cmd-input {
+    flex: 1 1 260px;
+    min-width: 0;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.85rem;
+    padding: 0.55rem 0.75rem;
+    border-radius: var(--radius);
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+  }
+  .cmd-input:hover { border-color: var(--border-strong); }
+  .cmd-run-btn {
+    border-radius: var(--radius);
+    border: 1.5px solid var(--forward);
+    background: var(--forward);
+    color: #fff;
+    padding: 0.55rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+  .cmd-run-btn:hover { background: var(--forward-strong); border-color: var(--forward-strong); }
+  .cmd-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin: 0.4rem 0 0;
+  }
+  .cmd-error {
+    margin: 0.5rem 0 0;
+    font-size: 0.8rem;
+    color: var(--undo-strong);
+    min-height: 1.1rem;
+  }
+
   .graph-log {
     margin-top: 1rem;
     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
@@ -388,6 +428,7 @@
   }
   .graph-log div { padding: 0.1rem 0; color: var(--text-muted); }
   .graph-log div:last-child { color: var(--text); font-weight: 600; }
+  .graph-log .log-note { color: var(--undo-strong); font-style: italic; }
 
   .legend {
     display: flex;
@@ -514,12 +555,34 @@
     vertical-align: top;
   }
   tbody tr:hover { background: var(--surface-2); }
+  tbody td:first-child {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    white-space: nowrap;
+  }
   tbody td:first-child code {
     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
     font-weight: 600;
     color: var(--forward-strong);
     white-space: nowrap;
   }
+  .copy-btn {
+    flex-shrink: 0;
+    border: 1px solid transparent;
+    background: none;
+    color: var(--text-muted);
+    border-radius: 6px;
+    width: 1.6rem;
+    height: 1.6rem;
+    font-size: 0.85rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .copy-btn:hover { background: var(--surface-2); color: var(--text); border-color: var(--border); }
+  .copy-btn.copied { color: var(--forward); }
   .no-results {
     padding: 1rem 0.75rem;
     color: var(--text-muted);
@@ -671,7 +734,17 @@
       <button class="btn-feature" id="btnCreateBranch" type="button">Create branch</button>
       <button class="btn-feature" id="btnFeatureCommit" type="button" disabled>Commit on feature</button>
       <button class="btn-merge" id="btnMerge" type="button" disabled>Merge feature &rarr; main</button>
+      <button class="reset-btn" id="graphUndo" type="button" disabled>&#8630; Undo last action</button>
     </div>
+
+    <form class="cmd-input-row" id="graphCmdForm">
+      <label for="graphCmdInput" class="visually-hidden">Type a git command to drive this simulation</label>
+      <input class="cmd-input" id="graphCmdInput" type="text" autocomplete="off" spellcheck="false"
+        placeholder='Or type it yourself: git checkout -b feature' />
+      <button class="cmd-run-btn" type="submit">Run</button>
+    </form>
+    <p class="cmd-hint">Simulated terminal &mdash; understands <code>git commit</code>, <code>git checkout -b &lt;name&gt;</code>, <code>git merge &lt;name&gt;</code>, <code>git branch</code>, <code>git log</code>, <code>git status</code>.</p>
+    <p class="cmd-error" id="graphCmdError" aria-live="polite"></p>
 
     <div class="graph-log" id="graphLog" aria-live="polite">
       <div>$ git init &mdash; repository ready on main</div>
@@ -874,8 +947,24 @@
     mainCommits: 1,     // count of commits on main (index 0 is initial commit)
     branchCreatedAt: null, // main commit index feature diverged from, or null
     featureCommits: 0,  // count of commits on feature (beyond the divergence point)
-    merged: false
+    merged: false,
+    currentBranch: 'main' // 'main' | 'feature' — which branch is "checked out"
   };
+  var history = []; // stack of previous state snapshots, for undo
+
+  function snapshotState() {
+    history.push(JSON.parse(JSON.stringify(state)));
+    document.getElementById('graphUndo').disabled = false;
+  }
+
+  function undoLast() {
+    if (!history.length) return;
+    state = history.pop();
+    renderGraph();
+    updateGraphButtons();
+    document.getElementById('graphUndo').disabled = history.length === 0;
+    logCmd('(undo) reverted last action');
+  }
 
   function mainX(i) { return START_X + i * STEP_X; }
 
@@ -989,9 +1078,14 @@
     }
   }
 
-  function logCmd(cmd) {
+  function logCmd(cmd, isNote) {
     var line = document.createElement('div');
-    line.textContent = '$ ' + cmd;
+    if (isNote) {
+      line.className = 'log-note';
+      line.textContent = cmd;
+    } else {
+      line.textContent = '$ ' + cmd;
+    }
     graphLog.appendChild(line);
     graphLog.scrollTop = graphLog.scrollHeight;
   }
@@ -1002,34 +1096,119 @@
     document.getElementById('btnMerge').disabled = state.branchCreatedAt === null || state.merged || state.featureCommits === 0;
   }
 
-  document.getElementById('btnMainCommit').addEventListener('click', function () {
+  function doMainCommit() {
+    snapshotState();
     state.mainCommits += 1;
+    state.currentBranch = 'main';
     renderGraph();
+    updateGraphButtons();
     logCmd('git commit -m "update on main"');
-  });
+    return true;
+  }
 
-  document.getElementById('btnCreateBranch').addEventListener('click', function () {
+  function doCreateBranch() {
+    if (state.branchCreatedAt !== null && !state.merged) return false;
+    snapshotState();
     state.branchCreatedAt = state.mainCommits - 1;
     state.featureCommits = 0;
     state.merged = false;
+    state.currentBranch = 'feature';
     renderGraph();
     updateGraphButtons();
     logCmd('git checkout -b feature');
-  });
+    return true;
+  }
 
-  document.getElementById('btnFeatureCommit').addEventListener('click', function () {
+  function doFeatureCommit() {
+    if (state.branchCreatedAt === null || state.merged) return false;
+    snapshotState();
     state.featureCommits += 1;
+    state.currentBranch = 'feature';
     renderGraph();
     updateGraphButtons();
     logCmd('git commit -m "work on feature"');
-  });
+    return true;
+  }
 
-  document.getElementById('btnMerge').addEventListener('click', function () {
+  function doMerge() {
+    if (state.branchCreatedAt === null || state.merged || state.featureCommits === 0) return false;
+    snapshotState();
+    var mainAdvanced = (state.mainCommits - 1) > state.branchCreatedAt;
     state.mainCommits += 1;
     state.merged = true;
+    state.currentBranch = 'main';
     renderGraph();
     updateGraphButtons();
     logCmd('git checkout main && git merge feature');
+    if (mainAdvanced) {
+      logCmd('note: main had new commits since branching — a real merge here could hit a conflict if the same lines changed', true);
+    }
+    return true;
+  }
+
+  document.getElementById('btnMainCommit').addEventListener('click', doMainCommit);
+  document.getElementById('btnCreateBranch').addEventListener('click', doCreateBranch);
+  document.getElementById('btnFeatureCommit').addEventListener('click', doFeatureCommit);
+  document.getElementById('btnMerge').addEventListener('click', doMerge);
+  document.getElementById('graphUndo').addEventListener('click', undoLast);
+
+  /* ---- typed command parser ---- */
+  var cmdForm = document.getElementById('graphCmdForm');
+  var cmdInput = document.getElementById('graphCmdInput');
+  var cmdError = document.getElementById('graphCmdError');
+
+  function parseAndRun(raw) {
+    var cmd = raw.trim().replace(/\s+/g, ' ');
+    cmdError.textContent = '';
+    if (!cmd) return;
+    var lower = cmd.toLowerCase();
+
+    if (/^git commit\b/.test(lower)) {
+      var ok = state.currentBranch === 'feature' ? doFeatureCommit() : doMainCommit();
+      if (!ok) cmdError.textContent = 'Nothing to commit to on the current branch — create a branch first, or it may already be merged.';
+      return;
+    }
+    if (/^git branch\s*$/.test(lower)) {
+      logCmd(cmd + '  (read-only — lists branches, nothing changes)');
+      return;
+    }
+    if (/^git (checkout -b|branch) \S+/.test(lower)) {
+      var created = doCreateBranch();
+      if (!created) cmdError.textContent = 'A feature branch already exists — merge it before creating a new one.';
+      return;
+    }
+    if (/^git checkout main\b/.test(lower) || /^git switch main\b/.test(lower)) {
+      state.currentBranch = 'main';
+      cmdError.textContent = '';
+      logCmd('git checkout main');
+      return;
+    }
+    if (/^git checkout feature\b/.test(lower) || /^git switch feature\b/.test(lower)) {
+      if (state.branchCreatedAt === null || state.merged) {
+        cmdError.textContent = 'There’s no active feature branch to switch to.';
+        return;
+      }
+      state.currentBranch = 'feature';
+      logCmd('git checkout feature');
+      return;
+    }
+    if (/^git merge\b/.test(lower)) {
+      var merged = doMerge();
+      if (!merged) cmdError.textContent = 'Nothing to merge yet — create a branch and commit on it first.';
+      return;
+    }
+    if (/^git (log|status)\b/.test(lower)) {
+      logCmd(cmd + '  (read-only — nothing changes)');
+      return;
+    }
+    cmdError.textContent = 'Not recognized in this simulation. Try: git commit, git checkout -b <name>, git merge <name>, git branch, git log, git status.';
+  }
+
+  cmdForm.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    parseAndRun(cmdInput.value);
+    cmdInput.value = '';
+    cmdInput.focus();
   });
 
   renderGraph();
@@ -1183,7 +1362,8 @@
       matches++;
       var tr = document.createElement('tr');
       var td1 = document.createElement('td');
-      td1.innerHTML = '<code>' + escapeHtml(row[0]) + '</code>';
+      td1.innerHTML = '<code>' + escapeHtml(row[0]) + '</code>' +
+        '<button class="copy-btn" type="button" data-cmd="' + escapeHtml(row[0]) + '" aria-label="Copy \'' + escapeHtml(row[0]) + '\' to clipboard">&#10697;</button>';
       var td2 = document.createElement('td');
       td2.textContent = row[1];
       tr.appendChild(td1);
@@ -1200,6 +1380,33 @@
 
   filterInput.addEventListener('input', function () {
     renderTable(filterInput.value);
+  });
+
+  refTableBody.addEventListener('click', function (ev) {
+    var btn = ev.target.closest ? ev.target.closest('.copy-btn') : null;
+    if (!btn) return;
+    var text = btn.getAttribute('data-cmd');
+    var restoreLabel = btn.getAttribute('aria-label');
+    function markCopied() {
+      btn.classList.add('copied');
+      btn.textContent = '✓';
+      setTimeout(function () {
+        btn.classList.remove('copied');
+        btn.innerHTML = '&#10697;';
+      }, 1200);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(markCopied, function () {});
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); markCopied(); } catch (e) {}
+      document.body.removeChild(ta);
+    }
   });
 
   renderTable('');
