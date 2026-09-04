@@ -597,6 +597,21 @@
     color: var(--text-muted);
     font-size: 0.8rem;
   }
+  footer p { margin: 0; color: inherit; }
+  footer p + p { margin-top: 0.6rem; }
+  .version-tag a {
+    display: inline-block;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0.2rem 0.65rem;
+    text-decoration: none;
+  }
+  .version-tag a:hover { color: var(--text); border-color: var(--border-strong); }
 
   .visually-hidden {
     position: absolute;
@@ -792,7 +807,10 @@
 </section>
 
 <footer>
-  Built to teach the mental model, not replace the docs. Hover, click, and break things &mdash; it resets.
+  <p>Built to teach the mental model, not replace the docs. Hover, click, and break things &mdash; it resets.</p>
+  <p class="version-tag">
+    <a href="https://github.com/junjing02/learn_git" target="_blank" rel="noopener noreferrer">v1.1.0</a>
+  </p>
 </footer>
 
 <script>
