@@ -348,6 +348,31 @@
     font-size: 0.8rem;
     color: var(--text-muted);
   }
+  .reset-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ---------- full command-map diagram (section 2) ---------- */
+  .gitmap-card { margin-top: 1.5rem; }
+  #gitMap { width: 100%; height: auto; display: block; margin-top: 0.5rem; }
+  .gitmap-zone-local { fill: var(--surface-2); }
+  .gitmap-zone-remote { fill: var(--forward-bg); }
+  .gitmap-lifeline { stroke: var(--border); stroke-width: 1.5; }
+  .gitmap-box-rect { fill: var(--surface); stroke: var(--border-strong); stroke-width: 2; }
+  .gitmap-box-label { fill: var(--text); font-family: var(--font); font-size: 13px; font-weight: 600; }
+  .gitmap-arrow { stroke-width: 3; }
+  .gitmap-arrow.forward { stroke: var(--forward); }
+  .gitmap-arrow.sync { stroke: var(--undo); }
+  .gitmap-arrow.thick { stroke-width: 6; }
+  .gitmap-arrowhead.forward { fill: var(--forward); }
+  .gitmap-arrowhead.sync { fill: var(--undo); }
+  .gitmap-label-bg { fill: var(--surface); }
+  .gitmap-label-text {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .gitmap-label-text.forward { fill: var(--forward-strong); }
+  .gitmap-label-text.sync { fill: var(--undo-strong); }
+  .gitmap-zone-label { fill: var(--text-muted); font-family: var(--font); font-size: 12px; font-weight: 600; }
   .reset-btn:hover { color: var(--text); border-color: var(--text); }
 
   /* ---------- section 3: branch graph ---------- */
@@ -441,6 +466,8 @@
   .legend-swatch { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
   .legend-swatch.main { background: var(--main-branch); }
   .legend-swatch.feature { background: var(--feature-branch); border-radius: 3px; }
+  .legend-swatch.forward { background: var(--forward); }
+  .legend-swatch.sync { background: var(--undo); border-radius: 3px; }
 
   /* ---------- section 4: stepper ---------- */
   .stepper-nav {
@@ -725,6 +752,98 @@
       </div>
     </div>
   </div>
+
+  <div class="card gitmap-card">
+    <h3>The full picture</h3>
+    <p>Every command from above, plus a few more, shown at once as a map instead of one step at a time.</p>
+
+    <svg id="gitMap" viewBox="0 0 940 320" preserveAspectRatio="xMidYMid meet" role="img"
+      aria-label="Command map between working directory, staging area, local repository, and remote repository, with every command shown as an arrow between two of these areas.">
+      <rect class="gitmap-zone-local" x="8" y="4" width="694" height="266" rx="10"></rect>
+      <rect class="gitmap-zone-remote" x="718" y="4" width="214" height="266" rx="10"></rect>
+
+      <line class="gitmap-lifeline" x1="110" y1="72" x2="110" y2="258"></line>
+      <line class="gitmap-lifeline" x1="350" y1="72" x2="350" y2="258"></line>
+      <line class="gitmap-lifeline" x1="590" y1="72" x2="590" y2="258"></line>
+      <line class="gitmap-lifeline" x1="830" y1="72" x2="830" y2="258"></line>
+
+      <rect class="gitmap-box-rect" x="25" y="16" width="170" height="56" rx="8"></rect>
+      <text class="gitmap-box-label" x="110" y="40" text-anchor="middle">Working</text>
+      <text class="gitmap-box-label" x="110" y="58" text-anchor="middle">directory</text>
+
+      <rect class="gitmap-box-rect" x="265" y="16" width="170" height="56" rx="8"></rect>
+      <text class="gitmap-box-label" x="350" y="40" text-anchor="middle">Staging</text>
+      <text class="gitmap-box-label" x="350" y="58" text-anchor="middle">area</text>
+
+      <rect class="gitmap-box-rect" x="505" y="16" width="170" height="56" rx="8"></rect>
+      <text class="gitmap-box-label" x="590" y="40" text-anchor="middle">Local</text>
+      <text class="gitmap-box-label" x="590" y="58" text-anchor="middle">repository</text>
+
+      <rect class="gitmap-box-rect" x="745" y="16" width="170" height="56" rx="8"></rect>
+      <text class="gitmap-box-label" x="830" y="40" text-anchor="middle">Remote</text>
+      <text class="gitmap-box-label" x="830" y="58" text-anchor="middle">(GitHub)</text>
+
+      <!-- row 1: add, commit, push (forward, teal) -->
+      <line class="gitmap-arrow forward" x1="110" y1="110" x2="336" y2="110"></line>
+      <polygon class="gitmap-arrowhead forward" points="336,104 350,110 336,116"></polygon>
+      <rect class="gitmap-label-bg" x="195" y="99" width="70" height="20" rx="4"></rect>
+      <text class="gitmap-label-text forward" x="230" y="113" text-anchor="middle">git add</text>
+
+      <line class="gitmap-arrow forward" x1="364" y1="110" x2="576" y2="110"></line>
+      <polygon class="gitmap-arrowhead forward" points="576,104 590,110 576,116"></polygon>
+      <rect class="gitmap-label-bg" x="424" y="99" width="92" height="20" rx="4"></rect>
+      <text class="gitmap-label-text forward" x="470" y="113" text-anchor="middle">git commit</text>
+
+      <line class="gitmap-arrow forward" x1="604" y1="110" x2="816" y2="110"></line>
+      <polygon class="gitmap-arrowhead forward" points="816,104 830,110 816,116"></polygon>
+      <rect class="gitmap-label-bg" x="671" y="99" width="78" height="20" rx="4"></rect>
+      <text class="gitmap-label-text forward" x="710" y="113" text-anchor="middle">git push</text>
+
+      <!-- row 2: reset, fetch (sync, coral) -->
+      <line class="gitmap-arrow sync" x1="336" y1="150" x2="124" y2="150"></line>
+      <polygon class="gitmap-arrowhead sync" points="124,144 110,150 124,156"></polygon>
+      <rect class="gitmap-label-bg" x="188" y="139" width="84" height="20" rx="4"></rect>
+      <text class="gitmap-label-text sync" x="230" y="153" text-anchor="middle">git reset</text>
+
+      <line class="gitmap-arrow sync" x1="816" y1="150" x2="604" y2="150"></line>
+      <polygon class="gitmap-arrowhead sync" points="604,144 590,150 604,156"></polygon>
+      <rect class="gitmap-label-bg" x="668" y="139" width="84" height="20" rx="4"></rect>
+      <text class="gitmap-label-text sync" x="710" y="153" text-anchor="middle">git fetch</text>
+
+      <!-- row 3: pull (sync, coral, spans the whole width) -->
+      <line class="gitmap-arrow sync thick" x1="816" y1="195" x2="124" y2="195"></line>
+      <polygon class="gitmap-arrowhead sync thick" points="126,187 108,195 126,203"></polygon>
+      <rect class="gitmap-label-bg" x="432" y="184" width="76" height="21" rx="4"></rect>
+      <text class="gitmap-label-text sync" x="470" y="199" text-anchor="middle">git pull</text>
+
+      <!-- row 4: checkout, clone (sync, coral) -->
+      <line class="gitmap-arrow sync" x1="576" y1="240" x2="124" y2="240"></line>
+      <polygon class="gitmap-arrowhead sync" points="124,234 110,240 124,246"></polygon>
+      <rect class="gitmap-label-bg" x="298" y="229" width="104" height="20" rx="4"></rect>
+      <text class="gitmap-label-text sync" x="350" y="243" text-anchor="middle">git checkout</text>
+
+      <line class="gitmap-arrow sync" x1="816" y1="240" x2="604" y2="240"></line>
+      <polygon class="gitmap-arrowhead sync" points="604,234 590,240 604,246"></polygon>
+      <rect class="gitmap-label-bg" x="669" y="229" width="82" height="20" rx="4"></rect>
+      <text class="gitmap-label-text sync" x="710" y="243" text-anchor="middle">git clone</text>
+
+      <text class="gitmap-zone-label" x="355" y="292" text-anchor="middle">Your machine</text>
+      <text class="gitmap-zone-label" x="825" y="292" text-anchor="middle">GitHub</text>
+    </svg>
+    <p class="visually-hidden">
+      Full command map, as text: git add moves files from the working directory to the staging area.
+      git commit moves staged files into the local repository. git push moves local commits to the remote repository.
+      git reset moves staged files back to the working directory. git fetch downloads remote history into the local
+      repository without touching your files. git pull downloads remote history and merges it straight into the
+      working directory. git checkout switches the working directory to match the local repository. git clone copies
+      an entire remote repository into a new local repository.
+    </p>
+
+    <div class="legend">
+      <span class="legend-item"><span class="legend-swatch forward" aria-hidden="true"></span> moves work forward, toward GitHub</span>
+      <span class="legend-item"><span class="legend-swatch sync" aria-hidden="true"></span> syncs or undoes, back toward you</span>
+    </div>
+  </div>
 </section>
 
 <section id="branching">
@@ -809,7 +928,7 @@
 <footer>
   <p>Built to teach the mental model, not replace the docs. Hover, click, and break things &mdash; it resets.</p>
   <p class="version-tag">
-    <a href="https://github.com/junjing02/learn_git" target="_blank" rel="noopener noreferrer">v1.1.0</a>
+    <a href="https://github.com/junjing02/learn_git" target="_blank" rel="noopener noreferrer">v1.2.0</a>
   </p>
 </footer>
 
