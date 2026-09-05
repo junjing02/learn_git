@@ -427,6 +427,106 @@
   .btn-merge { border-color: var(--border-strong); }
   .btn-rebase { border-color: var(--border-strong); border-style: dashed; }
 
+  /* ---------- merge conflict dialog ---------- */
+  .conflict-dialog {
+    max-width: 480px;
+    width: calc(100% - 2rem);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+  }
+  .conflict-dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
+  .conflict-dialog h3 { margin: 0 0 0.6rem; font-size: 1.1rem; }
+  .conflict-dialog h3 code {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.9em;
+    background: var(--surface-2);
+    border-radius: 4px;
+    padding: 0.05rem 0.3rem;
+  }
+  .conflict-dialog p { font-size: 0.88rem; margin: 0 0 1rem; }
+  .conflict-diff { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.1rem; }
+  .conflict-side {
+    border-radius: 8px;
+    padding: 0.6rem 0.75rem;
+    border-left: 4px solid var(--border-strong);
+    background: var(--surface-2);
+  }
+  .conflict-side.conflict-main { border-left-color: var(--main-branch); }
+  .conflict-side.conflict-feature { border-left-color: var(--feature-branch); }
+  .conflict-side-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    margin-bottom: 0.25rem;
+  }
+  .conflict-side code {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.85rem;
+    color: var(--text);
+  }
+  .conflict-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .conflict-actions .cmd-run-btn {
+    background: var(--surface-2);
+    color: var(--text);
+    border-color: var(--border-strong);
+    font-weight: 600;
+  }
+  .conflict-actions .cmd-run-btn:hover { background: var(--forward); color: #fff; border-color: var(--forward); }
+
+  /* ---------- remote/collaboration widget ---------- */
+  .collab-card { margin-top: 1.5rem; }
+  .collab-lanes {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+  @media (min-width: 620px) {
+    .collab-lanes { grid-template-columns: 1fr 1fr; }
+  }
+  .collab-lane {
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-2);
+    padding: 0.9rem 1rem;
+    min-height: 4.5rem;
+  }
+  .collab-lane-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    margin-bottom: 0.6rem;
+  }
+  .collab-dots { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; min-height: 1.4rem; }
+  .collab-dot {
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .collab-dot.synced { background: var(--main-branch); }
+  .collab-dot.unpushed { background: transparent; border: 2px dashed var(--undo); }
+  .collab-status {
+    margin: 0.75rem 0 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+  .collab-status.is-behind { color: var(--undo-strong); font-weight: 600; }
+
   .cmd-input-row {
     display: flex;
     flex-wrap: wrap;
@@ -965,6 +1065,56 @@
     <div class="graph-log" id="graphLog" aria-live="polite">
       <div>$ git init &mdash; repository ready on main</div>
     </div>
+
+    <dialog class="conflict-dialog" id="conflictDialog" aria-labelledby="conflictTitle">
+      <h3 id="conflictTitle">Merge conflict in <code>app.js</code></h3>
+      <p>main and feature both changed the same line since you branched off. Git stops here and asks you to pick what the final line should say before the merge can finish.</p>
+      <div class="conflict-diff">
+        <div class="conflict-side conflict-main">
+          <span class="conflict-side-label">main</span>
+          <code>const greeting = "Hello from main!";</code>
+        </div>
+        <div class="conflict-side conflict-feature">
+          <span class="conflict-side-label">feature</span>
+          <code>const greeting = "Hello from feature!";</code>
+        </div>
+      </div>
+      <div class="conflict-actions">
+        <button type="button" class="cmd-run-btn" data-resolution="main">Keep main&rsquo;s version</button>
+        <button type="button" class="cmd-run-btn" data-resolution="feature">Keep feature&rsquo;s version</button>
+        <button type="button" class="cmd-run-btn" data-resolution="both">Keep both, combined</button>
+      </div>
+      <button type="button" class="reset-btn" id="conflictCancel">Cancel merge</button>
+    </dialog>
+  </div>
+
+  <div class="card collab-card">
+    <h3>Working with a remote: you + a teammate</h3>
+    <p>The single most confusing real moment in Git: someone else pushed while you weren&rsquo;t looking, and now your push gets rejected. Unlike the buttons above, <strong>You push</strong> here always runs &mdash; even when it&rsquo;s going to fail &mdash; so you can see exactly what that looks like.</p>
+
+    <div class="collab-lanes">
+      <div class="collab-lane">
+        <div class="collab-lane-label">Remote (GitHub)</div>
+        <div class="collab-dots" id="collabRemoteDots" aria-label="Commits on the remote repository"></div>
+      </div>
+      <div class="collab-lane">
+        <div class="collab-lane-label">You (local)</div>
+        <div class="collab-dots" id="collabYouDots" aria-label="Your local commits"></div>
+      </div>
+    </div>
+    <p class="collab-status" id="collabStatus" aria-live="polite">You&rsquo;re up to date with the remote.</p>
+
+    <div class="graph-controls">
+      <button class="btn-feature" id="collabTeammatePush" type="button">Teammate pushes a commit</button>
+      <button class="btn-main" id="collabYouCommit" type="button">You commit</button>
+      <button class="btn-main" id="collabYouPush" type="button">You push</button>
+      <button class="btn-merge" id="collabYouPull" type="button" disabled>You pull</button>
+      <button class="reset-btn" id="collabReset" type="button">&#8635; Reset scenario</button>
+    </div>
+
+    <div class="graph-log" id="collabLog" aria-live="polite">
+      <div>$ everyone starts in sync, cloned from the same remote</div>
+    </div>
   </div>
 </section>
 
@@ -1014,7 +1164,7 @@
 <footer>
   <p>Built to teach the mental model, not replace the docs. Hover, click, and break things &mdash; it resets.</p>
   <p class="version-tag">
-    <a href="https://github.com/junjing02/learn_git" target="_blank" rel="noopener noreferrer">v1.4.0</a>
+    <a href="https://github.com/junjing02/learn_git" target="_blank" rel="noopener noreferrer">v1.5.0</a>
   </p>
 </footer>
 
@@ -1420,21 +1570,48 @@
     return true;
   }
 
-  function doMerge() {
-    if (state.branchCreatedAt === null || state.merged || state.featureCommits === 0) return false;
+  var conflictDialog = document.getElementById('conflictDialog');
+
+  function completeMerge(hadConflict, resolutionLabel) {
     snapshotState();
-    var mainAdvanced = (state.mainCommits - 1) > state.branchCreatedAt;
     state.mainCommits += 1;
     state.merged = true;
     state.currentBranch = 'main';
     renderGraph();
     updateGraphButtons();
     logCmd('git checkout main && git merge feature');
+    if (hadConflict) {
+      logCmd('conflict resolved: ' + resolutionLabel + ' — git add app.js && git commit', true);
+    }
+  }
+
+  function doMerge() {
+    if (state.branchCreatedAt === null || state.merged || state.featureCommits === 0) return false;
+    var mainAdvanced = (state.mainCommits - 1) > state.branchCreatedAt;
     if (mainAdvanced) {
-      logCmd('note: main had new commits since branching — a real merge here could hit a conflict if the same lines changed', true);
+      logCmd('git checkout main && git merge feature');
+      logCmd('CONFLICT (content): Merge conflict in app.js', true);
+      conflictDialog.showModal();
+    } else {
+      completeMerge(false);
     }
     return true;
   }
+
+  conflictDialog.querySelectorAll('[data-resolution]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var resolution = btn.getAttribute('data-resolution');
+      var label = resolution === 'main' ? 'kept main’s version'
+        : resolution === 'feature' ? 'kept feature’s version'
+        : 'combined both versions';
+      conflictDialog.close();
+      completeMerge(true, label);
+    });
+  });
+  document.getElementById('conflictCancel').addEventListener('click', function () {
+    conflictDialog.close();
+    logCmd('merge aborted — nothing changed', true);
+  });
 
   function doRebase() {
     if (state.branchCreatedAt === null || state.merged || state.featureCommits === 0) return false;
@@ -1532,6 +1709,96 @@
 
   window.addEventListener('resize', renderGraph);
   themeToggle.addEventListener('click', renderGraph);
+
+  /* ============ Remote/collaboration widget ============ */
+  var collabState = { remoteCount: 1, youBaseline: 1, youUnpushed: 0 };
+  var collabRemoteDots = document.getElementById('collabRemoteDots');
+  var collabYouDots = document.getElementById('collabYouDots');
+  var collabStatus = document.getElementById('collabStatus');
+  var collabLog = document.getElementById('collabLog');
+  var collabPullBtn = document.getElementById('collabYouPull');
+
+  function collabLogCmd(text, isNote) {
+    var line = document.createElement('div');
+    if (isNote) { line.className = 'log-note'; }
+    line.textContent = isNote ? text : '$ ' + text;
+    collabLog.appendChild(line);
+    collabLog.scrollTop = collabLog.scrollHeight;
+  }
+
+  function collabDotsHtml(syncedCount, unpushedCount) {
+    var html = '';
+    for (var i = 0; i < syncedCount; i++) html += '<span class="collab-dot synced" title="Commit ' + (i + 1) + '"></span>';
+    for (var j = 0; j < unpushedCount; j++) html += '<span class="collab-dot unpushed" title="Unpushed local commit"></span>';
+    return html;
+  }
+
+  function renderCollab() {
+    var youBehind = collabState.remoteCount > collabState.youBaseline;
+    collabRemoteDots.innerHTML = collabDotsHtml(collabState.remoteCount, 0);
+    collabYouDots.innerHTML = collabDotsHtml(collabState.youBaseline, collabState.youUnpushed);
+    collabPullBtn.disabled = !youBehind;
+
+    var behindCount = collabState.remoteCount - collabState.youBaseline;
+    var statusText;
+    if (youBehind && collabState.youUnpushed > 0) {
+      statusText = 'You’re ' + behindCount + ' commit(s) behind, and you have ' + collabState.youUnpushed + ' unpushed commit(s) of your own — pushing now will be rejected.';
+    } else if (youBehind) {
+      statusText = 'You’re ' + behindCount + ' commit(s) behind the remote — pushing now will be rejected until you pull.';
+    } else if (collabState.youUnpushed > 0) {
+      statusText = 'You’re up to date, with ' + collabState.youUnpushed + ' commit(s) ready to push.';
+    } else {
+      statusText = 'You’re up to date with the remote.';
+    }
+    collabStatus.textContent = statusText;
+    collabStatus.classList.toggle('is-behind', youBehind);
+  }
+
+  document.getElementById('collabTeammatePush').addEventListener('click', function () {
+    collabState.remoteCount += 1;
+    collabLogCmd('(teammate) git push  — origin/main advanced without you');
+    renderCollab();
+  });
+
+  document.getElementById('collabYouCommit').addEventListener('click', function () {
+    collabState.youUnpushed += 1;
+    collabLogCmd('git commit -m "your work"');
+    renderCollab();
+  });
+
+  document.getElementById('collabYouPush').addEventListener('click', function () {
+    var youBehind = collabState.remoteCount > collabState.youBaseline;
+    if (youBehind) {
+      collabLogCmd('git push');
+      collabLogCmd('! [rejected] main -> main (fetch first) — updates were rejected because the remote contains work you do not have locally', true);
+      return;
+    }
+    collabState.remoteCount += collabState.youUnpushed;
+    collabState.youBaseline = collabState.remoteCount;
+    collabState.youUnpushed = 0;
+    collabLogCmd('git push  — succeeded');
+    renderCollab();
+  });
+
+  document.getElementById('collabYouPull').addEventListener('click', function () {
+    var youBehind = collabState.remoteCount > collabState.youBaseline;
+    if (!youBehind) return;
+    var hadUnpushed = collabState.youUnpushed > 0;
+    collabState.youBaseline = collabState.remoteCount;
+    collabLogCmd('git pull');
+    collabLogCmd(hadUnpushed
+      ? 'merged remote changes with your unpushed commit(s) — created a merge commit'
+      : 'fast-forwarded — nothing of yours to reconcile', true);
+    renderCollab();
+  });
+
+  document.getElementById('collabReset').addEventListener('click', function () {
+    collabState = { remoteCount: 1, youBaseline: 1, youUnpushed: 0 };
+    collabLog.innerHTML = '<div>$ everyone starts in sync, cloned from the same remote</div>';
+    renderCollab();
+  });
+
+  renderCollab();
 
   /* ============ Section 4: GitHub workflow stepper ============ */
   var STEPS = [
