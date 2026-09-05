@@ -487,39 +487,33 @@
 
   /* ---------- remote/collaboration widget ---------- */
   .collab-card { margin-top: 1.5rem; }
-  .collab-lanes {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1rem;
-    margin-top: 1rem;
-  }
-  @media (min-width: 620px) {
-    .collab-lanes { grid-template-columns: 1fr 1fr; }
-  }
-  .collab-lane {
-    border: 1.5px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--surface-2);
-    padding: 0.9rem 1rem;
-    min-height: 4.5rem;
-  }
-  .collab-lane-label {
-    font-size: 0.78rem;
+  .collab-graph { width: 100%; height: auto; display: block; margin-top: 0.75rem; }
+  .collab-flag-bg { fill: var(--surface); stroke-width: 1.5; }
+  .collab-flag-bg.remote { stroke: var(--main-branch); }
+  .collab-flag-bg.you { stroke: var(--feature-branch); }
+  .collab-flag-text {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 12px;
     font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--text-muted);
-    margin-bottom: 0.6rem;
   }
-  .collab-dots { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; min-height: 1.4rem; }
-  .collab-dot {
-    width: 1.4rem;
-    height: 1.4rem;
-    border-radius: 50%;
-    flex-shrink: 0;
+  .collab-flag-text.remote { fill: var(--main-branch); }
+  .collab-flag-text.you { fill: var(--feature-branch); }
+  .collab-flag-tick { stroke-width: 1.5; stroke-dasharray: 2 2; }
+  .collab-flag-tick.remote { stroke: var(--main-branch); }
+  .collab-flag-tick.you { stroke: var(--feature-branch); }
+  .collab-reject-line { stroke: var(--undo); stroke-width: 2.5; stroke-dasharray: 5 4; }
+  .collab-reject-x {
+    fill: none;
+    stroke: var(--undo);
+    stroke-width: 3;
+    stroke-linecap: round;
   }
-  .collab-dot.synced { background: var(--main-branch); }
-  .collab-dot.unpushed { background: transparent; border: 2px dashed var(--undo); }
+  .collab-reject-label {
+    fill: var(--undo-strong);
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 700;
+  }
   .collab-status {
     margin: 0.75rem 0 0;
     font-size: 0.85rem;
@@ -1092,15 +1086,13 @@
     <h3>Working with a remote: you + a teammate</h3>
     <p>The single most confusing real moment in Git: someone else pushed while you weren&rsquo;t looking, and now your push gets rejected. Unlike the buttons above, <strong>You push</strong> here always runs &mdash; even when it&rsquo;s going to fail &mdash; so you can see exactly what that looks like.</p>
 
-    <div class="collab-lanes">
-      <div class="collab-lane">
-        <div class="collab-lane-label">Remote (GitHub)</div>
-        <div class="collab-dots" id="collabRemoteDots" aria-label="Commits on the remote repository"></div>
-      </div>
-      <div class="collab-lane">
-        <div class="collab-lane-label">You (local)</div>
-        <div class="collab-dots" id="collabYouDots" aria-label="Your local commits"></div>
-      </div>
+    <svg id="collabGraph" class="collab-graph" viewBox="0 0 500 200" preserveAspectRatio="xMidYMid meet"
+      role="img" aria-label="Graph of the remote's history and your local history, showing where they match and where they've diverged.">
+      <!-- populated by JS -->
+    </svg>
+    <div class="legend">
+      <span class="legend-item"><span class="legend-swatch main" aria-hidden="true"></span> shared / remote history (circle)</span>
+      <span class="legend-item"><span class="legend-swatch feature" aria-hidden="true"></span> your unpushed commits (square)</span>
     </div>
     <p class="collab-status" id="collabStatus" aria-live="polite">You&rsquo;re up to date with the remote.</p>
 
@@ -1164,7 +1156,7 @@
 <footer>
   <p>Built to teach the mental model, not replace the docs. Hover, click, and break things &mdash; it resets.</p>
   <p class="version-tag">
-    <a href="https://github.com/junjing02/learn_git" target="_blank" rel="noopener noreferrer">v1.5.0</a>
+    <a href="https://github.com/junjing02/learn_git" target="_blank" rel="noopener noreferrer">v1.5.1</a>
   </p>
 </footer>
 
@@ -1712,11 +1704,17 @@
 
   /* ============ Remote/collaboration widget ============ */
   var collabState = { remoteCount: 1, youBaseline: 1, youUnpushed: 0 };
-  var collabRemoteDots = document.getElementById('collabRemoteDots');
-  var collabYouDots = document.getElementById('collabYouDots');
+  var collabSvg = document.getElementById('collabGraph');
   var collabStatus = document.getElementById('collabStatus');
   var collabLog = document.getElementById('collabLog');
   var collabPullBtn = document.getElementById('collabYouPull');
+  var collabRemoteTip = { x: 0, y: 0 };
+  var collabYouTip = { x: 0, y: 0 };
+
+  var COLLAB_STEP = 70, COLLAB_START = 55, COLLAB_R = 13;
+  var COLLAB_Y_SHARED = 100, COLLAB_Y_REMOTE = 48, COLLAB_Y_YOU = 155;
+
+  function collabX(i) { return COLLAB_START + i * COLLAB_STEP; }
 
   function collabLogCmd(text, isNote) {
     var line = document.createElement('div');
@@ -1726,23 +1724,123 @@
     collabLog.scrollTop = collabLog.scrollHeight;
   }
 
-  function collabDotsHtml(syncedCount, unpushedCount) {
-    var html = '';
-    for (var i = 0; i < syncedCount; i++) html += '<span class="collab-dot synced" title="Commit ' + (i + 1) + '"></span>';
-    for (var j = 0; j < unpushedCount; j++) html += '<span class="collab-dot unpushed" title="Unpushed local commit"></span>';
-    return html;
+  function collabFlag(x, y, label, kind, below) {
+    var g = el('g', {});
+    var flagY = below ? y + 34 : y - 34;
+    g.appendChild(el('line', {
+      class: 'collab-flag-tick ' + kind, x1: x, y1: y, x2: x, y2: below ? flagY - 12 : flagY + 12
+    }));
+    var w = 22 + label.length * 6.5;
+    g.appendChild(el('rect', {
+      class: 'collab-flag-bg ' + kind, x: x - w / 2, y: flagY - 11, width: w, height: 22, rx: 11
+    }));
+    var t = el('text', {
+      class: 'collab-flag-text ' + kind, x: x, y: flagY + 4, 'text-anchor': 'middle'
+    });
+    t.textContent = label;
+    g.appendChild(t);
+    return g;
+  }
+
+  function renderCollabGraph() {
+    var sharedCount = collabState.youBaseline;
+    var remoteExtra = collabState.remoteCount - collabState.youBaseline;
+    var youExtra = collabState.youUnpushed;
+    var divergeIdx = sharedCount - 1;
+    var maxExtra = Math.max(remoteExtra, youExtra, 0);
+
+    while (collabSvg.firstChild) collabSvg.removeChild(collabSvg.firstChild);
+    var viewW = Math.max(500, collabX(divergeIdx) + 90 + maxExtra * COLLAB_STEP);
+    collabSvg.setAttribute('viewBox', '0 0 ' + viewW + ' 200');
+
+    var mainColor = getComputedStyle(root).getPropertyValue('--main-branch').trim();
+    var featureColor = getComputedStyle(root).getPropertyValue('--feature-branch').trim();
+    var surfaceColor = getComputedStyle(root).getPropertyValue('--surface').trim();
+
+    if (divergeIdx > 0) {
+      collabSvg.appendChild(el('line', {
+        x1: collabX(0), y1: COLLAB_Y_SHARED, x2: collabX(divergeIdx), y2: COLLAB_Y_SHARED,
+        stroke: mainColor, 'stroke-width': 3
+      }));
+    }
+    for (var i = 0; i <= divergeIdx; i++) {
+      collabSvg.appendChild(el('circle', {
+        cx: collabX(i), cy: COLLAB_Y_SHARED, r: COLLAB_R, fill: mainColor, stroke: surfaceColor, 'stroke-width': 2
+      }));
+    }
+
+    if (remoteExtra > 0) {
+      var rbx = collabX(divergeIdx);
+      collabSvg.appendChild(el('path', {
+        d: 'M ' + rbx + ' ' + COLLAB_Y_SHARED + ' C ' + (rbx + 30) + ' ' + COLLAB_Y_SHARED + ', ' + (rbx + 30) + ' ' + COLLAB_Y_REMOTE + ', ' + (rbx + 60) + ' ' + COLLAB_Y_REMOTE,
+        fill: 'none', stroke: mainColor, 'stroke-width': 3
+      }));
+      if (remoteExtra > 1) {
+        collabSvg.appendChild(el('line', {
+          x1: rbx + 60, y1: COLLAB_Y_REMOTE, x2: rbx + 60 + (remoteExtra - 1) * COLLAB_STEP, y2: COLLAB_Y_REMOTE,
+          stroke: mainColor, 'stroke-width': 3
+        }));
+      }
+      for (var r = 0; r < remoteExtra; r++) {
+        collabSvg.appendChild(el('circle', {
+          cx: rbx + 60 + r * COLLAB_STEP, cy: COLLAB_Y_REMOTE, r: COLLAB_R, fill: mainColor, stroke: surfaceColor, 'stroke-width': 2
+        }));
+      }
+      collabRemoteTip = { x: rbx + 60 + (remoteExtra - 1) * COLLAB_STEP, y: COLLAB_Y_REMOTE };
+    } else {
+      collabRemoteTip = { x: collabX(divergeIdx), y: COLLAB_Y_SHARED };
+    }
+
+    if (youExtra > 0) {
+      var ybx = collabX(divergeIdx);
+      collabSvg.appendChild(el('path', {
+        d: 'M ' + ybx + ' ' + COLLAB_Y_SHARED + ' C ' + (ybx + 30) + ' ' + COLLAB_Y_SHARED + ', ' + (ybx + 30) + ' ' + COLLAB_Y_YOU + ', ' + (ybx + 60) + ' ' + COLLAB_Y_YOU,
+        fill: 'none', stroke: featureColor, 'stroke-width': 3
+      }));
+      if (youExtra > 1) {
+        collabSvg.appendChild(el('line', {
+          x1: ybx + 60, y1: COLLAB_Y_YOU, x2: ybx + 60 + (youExtra - 1) * COLLAB_STEP, y2: COLLAB_Y_YOU,
+          stroke: featureColor, 'stroke-width': 3
+        }));
+      }
+      for (var y = 0; y < youExtra; y++) {
+        var yx = ybx + 60 + y * COLLAB_STEP;
+        collabSvg.appendChild(el('rect', {
+          x: yx - COLLAB_R, y: COLLAB_Y_YOU - COLLAB_R, width: COLLAB_R * 2, height: COLLAB_R * 2, rx: 4,
+          fill: featureColor, stroke: surfaceColor, 'stroke-width': 2
+        }));
+      }
+      collabYouTip = { x: ybx + 60 + (youExtra - 1) * COLLAB_STEP, y: COLLAB_Y_YOU };
+    } else {
+      collabYouTip = { x: collabX(divergeIdx), y: COLLAB_Y_SHARED };
+    }
+
+    collabSvg.appendChild(collabFlag(collabRemoteTip.x, collabRemoteTip.y, 'origin/main', 'remote', false));
+    collabSvg.appendChild(collabFlag(collabYouTip.x, collabYouTip.y, 'you (HEAD)', 'you', true));
+  }
+
+  function collabShowRejection() {
+    var g = el('g', { class: 'collab-reject' });
+    var x1 = collabYouTip.x, y1 = collabYouTip.y, x2 = collabRemoteTip.x, y2 = collabRemoteTip.y;
+    g.appendChild(el('line', { class: 'collab-reject-line', x1: x1, y1: y1, x2: x2, y2: y2 }));
+    var mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    g.appendChild(el('path', { class: 'collab-reject-x', d: 'M ' + (mx - 9) + ' ' + (my - 9) + ' L ' + (mx + 9) + ' ' + (my + 9) + ' M ' + (mx + 9) + ' ' + (my - 9) + ' L ' + (mx - 9) + ' ' + (my + 9) }));
+    var label = el('text', { class: 'collab-reject-label', x: mx, y: my - 16, 'text-anchor': 'middle' });
+    label.textContent = 'rejected';
+    g.appendChild(label);
+    collabSvg.appendChild(g);
+    setTimeout(function () { if (g.parentNode) g.parentNode.removeChild(g); }, 2200);
   }
 
   function renderCollab() {
     var youBehind = collabState.remoteCount > collabState.youBaseline;
-    collabRemoteDots.innerHTML = collabDotsHtml(collabState.remoteCount, 0);
-    collabYouDots.innerHTML = collabDotsHtml(collabState.youBaseline, collabState.youUnpushed);
+    renderCollabGraph();
     collabPullBtn.disabled = !youBehind;
 
     var behindCount = collabState.remoteCount - collabState.youBaseline;
     var statusText;
     if (youBehind && collabState.youUnpushed > 0) {
-      statusText = 'You’re ' + behindCount + ' commit(s) behind, and you have ' + collabState.youUnpushed + ' unpushed commit(s) of your own — pushing now will be rejected.';
+      statusText = 'Diverged: the remote has ' + behindCount + ' commit(s) you don’t have, and you have ' + collabState.youUnpushed + ' unpushed commit(s) of your own — pushing now will be rejected.';
     } else if (youBehind) {
       statusText = 'You’re ' + behindCount + ' commit(s) behind the remote — pushing now will be rejected until you pull.';
     } else if (collabState.youUnpushed > 0) {
@@ -1752,6 +1850,7 @@
     }
     collabStatus.textContent = statusText;
     collabStatus.classList.toggle('is-behind', youBehind);
+    collabSvg.setAttribute('aria-label', statusText);
   }
 
   document.getElementById('collabTeammatePush').addEventListener('click', function () {
@@ -1771,6 +1870,7 @@
     if (youBehind) {
       collabLogCmd('git push');
       collabLogCmd('! [rejected] main -> main (fetch first) — updates were rejected because the remote contains work you do not have locally', true);
+      collabShowRejection();
       return;
     }
     collabState.remoteCount += collabState.youUnpushed;
@@ -1799,6 +1899,8 @@
   });
 
   renderCollab();
+  window.addEventListener('resize', renderCollabGraph);
+  themeToggle.addEventListener('click', renderCollabGraph);
 
   /* ============ Section 4: GitHub workflow stepper ============ */
   var STEPS = [
