@@ -8,7 +8,7 @@
 <meta property="og:title" content="Git & GitHub, visually">
 <meta property="og:description" content="Learn Git by operating it: an interactive simulation of the four Git areas, branching & merging, and the GitHub PR workflow.">
 <meta property="og:type" content="website">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2315140f'/%3E%3Ccircle cx='9' cy='8' r='3.5' fill='%23f5f3ec'/%3E%3Ccircle cx='9' cy='24' r='3.5' fill='%23f5f3ec'/%3E%3Crect x='19.5' y='12.5' width='7' height='7' fill='%23f5f3ec'/%3E%3Cpath d='M9 12v8M9 16h11' stroke='%23f5f3ec' stroke-width='2.5' fill='none'/%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23111111'/%3E%3Ccircle cx='9' cy='8' r='3.5' fill='%23ffffff'/%3E%3Ccircle cx='9' cy='24' r='3.5' fill='%23ffffff'/%3E%3Crect x='19.5' y='12.5' width='7' height='7' fill='%23ffffff'/%3E%3Cpath d='M9 12v8M9 16h11' stroke='%23ffffff' stroke-width='2.5' fill='none'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -16,17 +16,17 @@
   :root {
     --font: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
 
-    /* one ink, one paper — everything else below is a tint of ink on paper */
-    --paper: #f5f3ec;
-    --ink: #15140f;
+    /* clean white theme with neutral high-contrast ink */
+    --paper: #ffffff;
+    --ink: #111111;
 
     --bg: var(--paper);
     --surface: var(--paper);
-    --surface-2: #e7e3d4;
+    --surface-2: #f4f4f5;
     --border: var(--ink);
     --border-strong: var(--ink);
     --text: var(--ink);
-    --text-muted: #5a5744;
+    --text-muted: #52525b;
 
     /* no second hue left — forward/undo and main/feature pairs are told apart
        by solid-vs-dashed strokes, fill-vs-outline, shape, and +/- prefixes */
@@ -46,15 +46,15 @@
   }
 
   :root[data-theme="dark"] {
-    --paper: #16150f;
-    --ink: #f2f0e4;
+    --paper: #09090b;
+    --ink: #fafafa;
     --bg: var(--paper);
     --surface: var(--paper);
-    --surface-2: #241f16;
+    --surface-2: #18181b;
     --border: var(--ink);
     --border-strong: var(--ink);
     --text: var(--ink);
-    --text-muted: #a8a48f;
+    --text-muted: #a1a1aa;
 
     --forward: var(--ink);
     --forward-bg: var(--surface-2);
@@ -72,15 +72,15 @@
 
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --paper: #16150f;
-      --ink: #f2f0e4;
+      --paper: #09090b;
+      --ink: #fafafa;
       --bg: var(--paper);
       --surface: var(--paper);
-      --surface-2: #241f16;
+      --surface-2: #18181b;
       --border: var(--ink);
       --border-strong: var(--ink);
       --text: var(--ink);
-      --text-muted: #a8a48f;
+      --text-muted: #a1a1aa;
 
       --forward: var(--ink);
       --forward-bg: var(--surface-2);
@@ -155,10 +155,34 @@
     backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--border);
   }
+  .topnav .brand-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
   .topnav .brand {
     font-weight: 700;
     font-size: 0.95rem;
-    white-space: nowrap;
+  }
+  .topnav .version-badge {
+    font-family: var(--font);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.15rem 0.45rem;
+    line-height: 1.2;
+    text-decoration: none;
+    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  }
+  .topnav .version-badge:hover {
+    color: var(--text);
+    border-color: var(--border-strong);
+    background: var(--surface);
   }
   .topnav ul {
     list-style: none;
@@ -884,7 +908,10 @@
 <body>
 
 <nav class="topnav" aria-label="Section navigation">
-  <span class="brand">Git &amp; GitHub</span>
+  <div class="brand-wrap">
+    <span class="brand">Git &amp; GitHub</span>
+    <a class="version-badge" href="https://github.com/junjing02/learn_git" target="_blank" rel="noopener noreferrer" title="View repository on GitHub">v1.5.2</a>
+  </div>
   <ul id="navlist">
     <li><a class="navlink" href="#hero">Intro</a></li>
     <li><a class="navlink" href="#areas">Git areas</a></li>
